@@ -1,0 +1,43 @@
+﻿@page "/info"
+@using System.Runtime.InteropServices;
+
+<PageTitle>Index</PageTitle>
+
+<!--MudText Typo="Typo.h3" GutterBottom="true">Informações do sistema</!--MudText-->
+<MudText Class="mb-8">Informações do sistema</MudText>
+<!--MudAlert Severity="Severity.Normal">You can find documentation and examples on our website here: <MudLink Href="https://mudblazor.com" Typo="Typo.body2" Color="Color.Inherit"><b>www.mudblazor.com</b></MudLink></!--MudAlert-->
+<MudAlert Severity="Severity.Normal">
+    Versão do SO:
+    <MudLink Typo="Typo.body2" Color="Color.Inherit"><b>@VersaoSO</b></MudLink>
+</MudAlert>
+<MudAlert Severity="Severity.Normal">
+    Descrição do SO:
+    <MudLink Typo="Typo.body2" Color="Color.Inherit"><b>@DescricaoSO</b></MudLink>
+</MudAlert>
+<MudAlert Severity="Severity.Normal">
+    Versão do App:
+    <MudLink Typo="Typo.body2" Color="Color.Inherit"><b>@VersaoApp</b></MudLink>
+</MudAlert>
+<MudAlert Severity="Severity.Normal">
+    Maquina:
+    <MudLink Typo="Typo.body2" Color="Color.Inherit"><b>@Maquina</b></MudLink>
+</MudAlert>
+
+
+@code
+{
+    string VersaoSO { get; set; }
+    string DescricaoSO { get; set; }
+    string VersaoApp { get; set; }
+    string Maquina { get; set; }
+
+    protected override void OnInitialized()
+    {
+        VersaoSO = $"{Environment.OSVersion.VersionString}";
+        Maquina = $"{Environment.MachineName}";
+        DescricaoSO = $"{RuntimeInformation.OSDescription}";
+        VersaoApp = $"{Util.CapturarVersao()}";
+
+        base.OnInitialized();
+    }
+}

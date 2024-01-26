@@ -1,0 +1,154 @@
+﻿@page "/qrcode"
+
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h3" GutterBottom="true">Cashback</MudText>
+<MudText Class="mb-8">Use este painel para gerar o QrCode do cliente</MudText>
+
+
+<MudGrid Spacing="2" Justify="Justify.Center">
+    <MudItem xs="12">
+        <EditForm Model="@Config" OnValidSubmit="OnValidSubmit">
+            <DataAnnotationsValidator />
+            <MudGrid>
+                <MudItem xs="6" sm="12">
+                    <MudCard>
+                        <MudCardContent>
+
+                            <MudTextField Label="CNPJ" HelperText="CNPJ do cliente"
+                            @bind-Value="Config.CnpjEmpresa" />
+
+                            <MudTextField Label="Instagram" HelperText="Iinstagram do cliente"
+                            @bind-Value="Config.Instagram" />
+
+                            <MudTextField Label="Site" HelperText="Site do cliente"
+                            @bind-Value="Config.Site" />
+
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton ButtonType="ButtonType.Submit"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Class="ml-auto" OnClick="OnPostAsync">Gerar</MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                    <!--MudImage Src="/Imagens/time_sombra.jpg" Alt="QrCode" Elevation="25" Class="rounded-lg" /-->
+                </MudItem>
+                <!--MudAlert-- Severity="Severity.Warning" Variant="Variant.Filled">@Mensagem</!--MudAlert-->
+                <MudItem xs="12">
+                    <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Warning">
+                        @Mensagem
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudItem>
+    <!--MudItem xs="6">
+         <MudPaper Class="d-flex align-center justify-center mud-width-full py-8">
+                <MudGrid>
+                <MudImage Src="@imageSource"></MudImage>
+                    <MudCardActions>
+                            <MudButton ButtonType="ButtonType.Submit"
+                                       Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Class="ml-auto" 
+                                       OnClick="ShowImage">Baixar</MudButton>
+                        </MudCardActions>
+                </MudGrid>
+         </MudPaper>
+    </!--MudItem-->
+</MudGrid>
+<!--MudOverlay Visible="isVisible" OnClick="ShowSnackbar" DarkBackground="true" ZIndex="9999" /-->
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Mvc;
+@using static MudBlazor.CategoryTypes;
+@code
+{
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+
+    OrbitaKey.Data.Models.CashConfig Config = new OrbitaKey.Data.Models.CashConfig();
+
+    bool success;
+    string Mensagem = string.Empty;
+
+    
+
+    //private Image Imagem = null;
+
+    protected override void OnInitialized()
+    {
+        //Carregar();
+
+        base.OnInitialized();
+    }
+
+    private bool isVisible;
+
+    public void ShowSnackbar(string mensagem)
+    {
+        Snackbar.Add(mensagem, Severity.Normal);
+        isVisible = false;
+    }
+
+    private string? imageSource;
+
+    private void ShowImage()
+    {
+        imageSource = $"/imagens/time_sombra.jpg";
+    }
+
+    public async Task OnPostAsync()
+    {
+        try
+        {
+            using (var con = new OrbitaKey.Data.MyContext())
+            {
+                var existente = con.Cliente.FirstOrDefault(x => x.Cnpj == Config.CnpjEmpresa);
+
+                if (existente != null)
+                {
+                    var cfg = con.CashConfig.FirstOrDefault(x => x.CnpjEmpresa == Config.CnpjEmpresa);
+
+                    if (cfg == null)
+                    {
+                        var empresa = con.Empresas.FirstOrDefault(x => x.IdEmpresa == existente.IdEmpresa);
+
+                        cfg = new OrbitaKey.Data.Models.CashConfig();
+                        cfg.Guid = Guid.NewGuid();
+                        cfg.Data = DateTime.Now;
+
+                        cfg.CnpjEmpresa = Config.CnpjEmpresa;
+                        cfg.Instagram = Config.Instagram;
+                        cfg.Site = Config.Site;
+                        cfg.CnpjRepresentante = empresa.Cnpj; ;
+                        cfg.MensagemSucesso = "Cadastro realizado com sucesso.";
+                        con.CashConfig.Add(cfg);
+
+                        con.SaveChanges();
+
+                        Dados.Config = cfg;
+                        Config = cfg;
+                    }
+
+                    ShowSnackbar("Geranr o qr code");
+                }
+                else
+                {
+                    ShowSnackbar("CNPJ Não localizado");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    private void OnValidSubmit(EditContext context)
+    {
+        success = true;
+        StateHasChanged();
+    }
+
+}

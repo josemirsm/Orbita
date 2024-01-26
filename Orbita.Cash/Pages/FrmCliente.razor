@@ -1,0 +1,227 @@
+﻿@page "/"
+@page "/{cnpj}"
+
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@namespace Orbita.Cash.Pages
+
+<MudText Typo="Typo.h3" GutterBottom="true">Cashback</MudText>
+<MudText Class="mb-8">Cadastre-se e garanta parte do seu dinheiro de volta!</MudText>
+
+<EditForm Model="@Cliente" OnValidSubmit="OnValidSubmit">
+    <DataAnnotationsValidator />
+    <MudGrid id="dgvPrincpal">
+        <MudItem xs="12" sm="12">
+            <MudCard id="panPrincipal">
+                <MudCardContent>
+                    <MudTextField Label="Nome Teste" HelperText="Nome completo"
+                    @bind-Value="Cliente.NomeRazao" Clearable id="txtNome"/>
+
+                    <!--MudTextField Label="CPF" HelperText="Número do CPF"
+                    @bind-Value="Cliente.CpfCliente" /-->
+
+                    <MudTextField Mask="@MascaraCpf" Label="CPF" HelperText="Número do CPF"
+                    @bind-Value="Cliente.CpfCliente" Variant="@Variant.Text" Placeholder="___.___.___-__" Clearable id="mskCpf"/>
+
+                    <!--MudTextField Mask="@MascaraCelular" Label="Celular" HelperText="Número do celular" Placeholder="( ) _ ____-____"
+                    @bind-Value="Cliente.Celular" Variant="@Variant.Text" Clearable /-->
+
+                    <MudTextField Mask="@MascaraCelular" Label="Celular" HelperText="Número do celular" Placeholder="( ) _ ____-____"
+                                   @bind-Value="Cliente.Celular" Variant="@Variant.Text" Clearable id="mskCelular" />
+
+                    <MudTextField Label="Cidade" HelperText="Cidade que reside"
+                                   @bind-Value="Cliente.Cidade" Clearable id="txtCidade" />
+
+
+                    <!--MudDatePicker Label="Nascimento"
+                                   Editable="true"
+                    @bind-Date="Cliente.Nascimento"
+                                   Mask="@MascaraData"
+                                   DateFormat="dd/MM/yyyy"
+                                   Placeholder="  /  /    " Clearable /-->
+
+                    <MudDatePicker 
+                        Label="Nascimento"
+                                   Editable="true"
+                    @bind-Date="Cliente.Nascimento"
+                                   Mask="@MascaraData"
+                                   DateFormat="dd/MM/yyyy"
+                                    Placeholder="  /  /    " Clearable id="mskData" />
+
+                </MudCardContent>
+
+                <MudCardActions>
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="Color.Info"
+                               Class="ml-auto"
+                               OnClick="OnPostAsync">Cadastro</MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+        <!--MudAlert-- Severity="Severity.Warning" Variant="Variant.Filled">@Mensagem</!--MudAlert-->
+        <MudItem xs="12">
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Warning">
+                @Mensagem
+            </MudText>
+        </MudItem>
+    </MudGrid>
+</EditForm>
+
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Mvc;
+@code
+{
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+
+    OrbitaKey.Data.Models.CashCliente Cliente = new OrbitaKey.Data.Models.CashCliente();
+
+    bool success;
+    string Mensagem = string.Empty;
+
+    [Parameter]
+    public string? cnpj { get; set; } = "24165835000160";
+
+    private bool isVisible;
+
+    string rawValue { get; set; }
+
+
+    public void ShowSnackbar()
+    {
+        Snackbar.Add("Você já está cadastrado.", Severity.Info);
+        isVisible = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        Carregar();
+
+        base.OnInitialized();
+    }
+
+    void Carregar()
+    {
+        if (!string.IsNullOrEmpty(cnpj))
+        {
+            try
+            {
+                using (var con = new OrbitaKey.Data.MyContext())
+                {
+                    var cli = con.Cliente.FirstOrDefault(x => x.Cnpj == cnpj);
+
+                    if (cli != null)
+                    {
+                        Dados.Cliente = cli;
+
+                        var emp = con.Empresas.FirstOrDefault(x => x.IdEmpresa == cli.IdEmpresa);//50270632000143
+
+                        if (emp != null)
+                            Dados.Empresa = emp;
+
+                        var cfg = con.CashConfig.FirstOrDefault(x => x.CnpjEmpresa == cli.Cnpj);
+
+                        if (cfg != null)
+                            Dados.Config = cfg;
+                        else
+                        {
+                            cfg = new OrbitaKey.Data.Models.CashConfig();
+                            cfg.Guid = Guid.NewGuid();
+                            cfg.Data = DateTime.Now;
+
+                            cfg.CnpjEmpresa = cli.Cnpj;
+                            cfg.CnpjRepresentante = emp.Cnpj;
+                            cfg.MensagemSucesso = "Cadastro realizado com sucesso.";
+                            con.CashConfig.Add(cfg);
+
+                            con.SaveChanges();
+
+                            Dados.Config = cfg;
+                        }
+                    }
+                    else
+                    {
+                        NavigationManager.NavigateTo("/naolocalizado");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+        else
+        {
+            Dados.Cliente.Fantasia = "Orbita Sistemas";
+        }
+
+    }
+
+    public async Task OnPostAsync()
+    {
+        try
+        {
+            using (var con = new OrbitaKey.Data.MyContext())
+            {
+                var existente = con.CashCliente.FirstOrDefault(x => x.CpfCliente == Cliente.CpfCliente && x.CnpjEmpresa == cnpj);
+
+                if (existente == null)
+                {
+                    Cliente.Guid = Guid.NewGuid();
+                    Cliente.CnpjEmpresa = Dados.Cliente.Cnpj;
+                    Cliente.CnpjRepresentante = Dados.Empresa.Cnpj;
+                    Cliente.Data = DateTime.Now;
+
+                    con.CashCliente.Add(Cliente);
+
+                    if (await con.SaveChangesAsync() > 0)
+                    {
+                        NavigationManager.NavigateTo("/sucesso");
+                    }
+                    else
+                    {
+                        NavigationManager.NavigateTo("/erro");
+                    }
+                }
+                else
+                {
+                    ShowSnackbar();
+                    //Mensagem = "Você já está cadastrado";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    public PatternMask MascaraCpf = new PatternMask("###.###.###-##")
+        {
+            MaskChars = new[] { new MaskChar('#', @"[0-9a-fA-F]") }
+        };
+
+    public PatternMask MascaraCelular = new PatternMask("(##) # ####-####")
+        {
+            MaskChars = new[] { new MaskChar('#', @"[0-9a-fA-F]") }
+        };
+
+
+    public PatternMask MascaraData = new PatternMask("##/##/####")
+        {
+            MaskChars = new[]
+                {
+                new MaskChar('#', @"[0-9a-fA-F]")
+            }
+        };
+        
+    private void OnValidSubmit(EditContext context)
+    {
+        success = true;
+        StateHasChanged();
+    }
+
+}

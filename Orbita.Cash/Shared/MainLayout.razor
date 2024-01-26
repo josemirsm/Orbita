@@ -1,0 +1,65 @@
+﻿@inherits LayoutComponentBase
+@using MudBlazor
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Color="Color.Info">
+        <MudSpacer />
+        <MudText Typo="Typo.h6">@Dados.Cliente.Fantasia</MudText>
+        <!--MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" /-->
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Custom.Brands.Instagram" Color="Color.Inherit" Link="@Dados.Config.Instagram" Target="_blank" />
+    </MudAppBar>
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">@Dados.Cliente.Fantasia</MudText>
+        </MudDrawerHeader>
+        <NavMenu />
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.Small" Class="pt-2 pb-14">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+    <!--MudPaper-- Height="50px" Width="100%">
+        <MudContainer Fixed="true">
+            <MudPaper Height="40px" Width="100%" Square="true" Class="mud-theme-primary pa-3">
+                <MudLink Class="" Href="https://www.orbita.com.br" Typo="Typo.body2" Color="Color.Inherit">© 2023 Orbita Sistemas</MudLink>
+            </MudPaper>
+        </MudContainer>
+    </!--MudPaper-->
+    <MudAppBar Bottom="true" Fixed="true" Color="Color.Info" Elevation="1">
+        <MudLink Href="https://www.orbita.com.br" Typo="Typo.body2" Color="Color.Inherit">© 2023 Orbita Sistemas - (75) 3631-7535</MudLink>
+        <MudSpacer />
+        <label>@Versao</label>
+        <MudIconButton Icon="@Icons.Custom.Brands.Instagram" Color="Color.Inherit" Link="https://instagram.com/orbitasistemas" Target="_blank" />
+    </MudAppBar>
+</MudLayout>
+
+@using System.Runtime.InteropServices
+@using System.Diagnostics;
+
+@code
+{
+    string Fantasia { get; set; } = "Orbita Sistemas";
+
+    string Versao { get; set; } = "";
+
+    bool _drawerOpen = false;
+    //Dados.Cliente.Fantasia != string.Empty ? Dados.Cliente.Fantasia : "Orbita Sistemas"//8001645-03.2020.8.05.0229
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    protected override void OnInitialized()
+    {
+        Versao = $"{Util.CapturarVersao()}";
+
+        base.OnInitialized();
+    }
+}
